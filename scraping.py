@@ -20,6 +20,7 @@ def scrape_all():
       "news_paragraph": news_paragraph,
       "featured_image": featured_image(browser),
       "facts": mars_facts(),
+      "hemispheres": hemispheres(browser),
       "last_modified": dt.datetime.now()
     }
 
@@ -99,7 +100,55 @@ def mars_facts():
     df.set_index('Description', inplace=True)
 
     # Convert dataframe into HTML format, add bootstrap
-    return df.to_html()
+    return df.to_html(classes="table table-striped")
+
+# Define function for hemisphere image scrape
+
+def hemispheres(browser):
+    url = 'https://marshemispheres.com/'
+
+    browser.visit(url + 'index.html')
+
+    # Click the link, find the anchor and return the href
+    hemisphere_image_urls = []
+
+    for i in range(4):
+        # Click each link
+        browser.find_by_css("a.product-item img")[i].click()
+        hemi_data = scrape_hemisphere(browser.html)
+        hemi_data['img_url'] = url + hemi_data['img_url']
+
+        # Append to list
+        hemisphere_image_urls.append(hemi_data)
+
+        # Go back
+        browser.back()
+
+    return hemisphere_image_urls
+
+# Define function for hemisphere title scrape
+
+def scrape_hemisphere(html_text):
+
+    # Parse html text
+    hemi_soup = soup(html_text, "html.parser")
+
+    # Add try/except for error handling
+    try:
+        title_elem = hemi_soup.find("h2", class_="title").get_text()
+        sample_elem = hemi_soup.find("a", text="Sample").get("href")
+
+    except AttributeError:
+        title_elem = None
+        sample_elem = None
+
+    # Add to dictionary
+    hemispheres = {
+        "title": title_elem,
+        "img_url": sample_elem
+    }
+
+    return hemispheres
 
 # Tell Flask script is complete and ready
 if __name__ == "__main__":
